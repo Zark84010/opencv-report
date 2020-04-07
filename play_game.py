@@ -3,34 +3,36 @@ import numpy as np
 import cv2
 
 last = "centre"
+downPressed = False
 cam = cv2.VideoCapture(0)
 
 while True:
   _, img = cam.read()
   height, width, depth = img.shape
-  blur = cv2.GaussianBlur(img, (5, 5), 0)
-  hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
+  blur = cv2.GaussianBlur(img, (3, 3), 0)
+  hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
+  
   lower = np.array([0, 10, 60])
   upper = np.array([20, 150, 255])
   mask = cv2.inRange(hsv, lower, upper)
 
+  # Filtering background noise
   kernel_square = np.ones((11, 11), np.uint8)
   kernel_ellipse = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-
-  # Filtering background noise
-  dil = cv2.dilate(mask, kernel_ellipse, iterations=1)
-  er = cv2.erode(dil, kernel_square, iterations=1)
-  dil = cv2.dilate(er, kernel_ellipse, iterations=1)
-  filtered = cv2.medianBlur(dil, 5)
+  mask = cv2.dilate(mask, kernel_ellipse, iterations=1)
+  mask = cv2.erode(mask, kernel_square, iterations=1)
+  mask = cv2.dilate(mask, kernel_ellipse, iterations=1)
+  mask = cv2.medianBlur(mask, 5)
   kernel_ellipse = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (8, 8))
-  dil = cv2.dilate(filtered, kernel_ellipse, iterations=1)
-  median = cv2.medianBlur(dil, 5)
-  thresh = cv2.threshold(median, 127, 255, cv2.THRESH_BINARY)[1]
+  mask = cv2.dilate(mask, kernel_ellipse, iterations=1)
+  mask = cv2.medianBlur(mask, 5)
+
+  thresh = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)[1]
 
   # Finding the largest contour (of the hand)
   cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
-  if len(cnts) == 0 :
+  if len(cnts) == 0:
     last = "none"
     continue
   max_area = -1
@@ -39,13 +41,13 @@ while True:
     if area > max_area:
       max_area = area
       cnt = c
-      
+  
   # Finding centre of the contour
   mom = cv2.moments(cnt)
   if mom['m00'] != 0:
     cx = int(mom['m10']/mom['m00'])
     cy = int(mom['m01']/mom['m00'])
-
+  
   # Drawing everything in the image
   cv2.drawContours(img, [cnt], -1, (122, 122, 0), 2)
   cv2.circle(img, (cx, cy), 7, (0, 0, 255), 2)
@@ -59,14 +61,19 @@ while True:
       pyautogui.press("up")
     last = "up"
   elif cy > height//2 + 70:
-    if last != "down":
-      pyautogui.press("down")
+    if last != "down" and not downPressed:
+      pyautogui.keyDown("down")
+      downPressed = True
     last = "down"
   else:
+    if downPressed:
+      pyautogui.keyUp("down")
+      downPressed = False
     last = "centre"
   
   cv2.imshow("Frame", img)
-  k = cv2.waitKey(10)
+  cv2.imshow("Thresh", thresh)
+  k = cv2.waitKey(10) & 0xFF
   if k == 27:
     break
 
