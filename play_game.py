@@ -9,7 +9,7 @@ time.sleep(5)
 cam = cv2.VideoCapture(0)
 
 while True:
-  ret, img = cam.read()
+  _, img = cam.read()
   height, width, depth = img.shape
   blur = cv2.GaussianBlur(img, (5, 5), 0)
   hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -31,7 +31,7 @@ while True:
   median = cv2.medianBlur(dil, 5)
   thresh = cv2.threshold(median, 127, 255, cv2.THRESH_BINARY)[1]
 
-  # Adding contours
+  # Finding the largest contour (of the hand)
   cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
   if len(cnts) == 0 :
     last = "none"
@@ -42,6 +42,8 @@ while True:
     if area > max_area:
       max_area = area
       cnt = c
+      
+  # Finding centre of the contour
   mom = cv2.moments(cnt)
   if mom['m00'] != 0:
     cx = int(mom['m10']/mom['m00'])
