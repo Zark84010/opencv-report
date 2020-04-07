@@ -33,4 +33,13 @@ upper = np.array([20, 150, 255])
 mask = cv2.inRange(hsv, lower, upper)
 ```
 First, we blur the image using Gaussian Blur so that our algorithms can work better as they work on the important elements rather than the noise. In the `cv2.GaussianBlur()` method, our arguments are the image, the kernel size, and the 3rd argument `0` specifies that the values of sigma x (std. deviation in the x-direction) and sigma y are calculated from the kernel. The kernel can be thought of as a "brush" such that when this "brush" sweeps over the image, each pixel is changed in a particular way, which in this case results in the blurring of the image. (5, 5) denotes the size of the blur, higher the values, more is the blur effect.
-jknkjnf
+Using `cv2.cvtColor(img, cv2.COLOR_BGR2HSV)` we convert the blurred image from RGB color scheme to HSV color scheme, because it is easier to filter out skin color in HSV. We then create the mask for the skin color portions using `cv2.inRange(hsv, lower, upper)`. Here we used 2 `numpy.ndarray`s of length 3, which correspond to orangish tints in HSV, similar to skin color. All colors between these values are "whitened out" in our mask.
+
+So now we have a mask, which is white in all regions where there is the hand (assuming the hand to be the only skin colored object), and black otherwise.
+
+So now we have our final mask, which ideally contains only the hand, but at the very least we can almost safely say that if there are more objects then the largest one out of them is the hand. 
+```
+cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+```
+Now, from our mask `thresh`, we get our list of contours (roughly speaking, the borders surrounding each object) using the above line of code. The flag `cv2.RETR_EXTERNAL` means that if, says, the object is of a donut shape, only the outer boundary is considered as the contour. The flag `cv2.CHAIN_APPROX_SIMPLE` means that redundant points are removed (for e.g. using 4 points for a rectangle rather than a large number of points) thus saving memory. Note that the method itself actually gives a tuple, and the list of contours is actually at one of the indices. This index at which the list of contours lies is different in different OpenCV versions, for the (as of now) latest OpenCV 4.x, the index is 0. We store the list of contours in the variable `cnts`.
+
