@@ -32,4 +32,5 @@ lower = np.array([0, 10, 60])
 upper = np.array([20, 150, 255])
 mask = cv2.inRange(hsv, lower, upper)
 ```
-First, we blur the image using Gaussian Blur so that our algorithms can work better as they work on the important elements rather than the noise. In the `cv2.GaussianBlur()` method, our arguments are the image, the kernel size, 
+First, we blur the image using Gaussian Blur so that our algorithms can work better as they work on the important elements rather than the noise. In the `cv2.GaussianBlur()` method, our arguments are the image, the kernel size, and the 3rd argument `0` specifies that the values of sigma x (std. deviation in the x-direction) and sigma y are calculated from the kernel. The kernel can be thought of as a "brush" such that when this "brush" sweeps over the image, each pixel is changed in a particular way, which in this case results in the blurring of the image. (5, 5) denotes the size of the blur, higher the values, more is the blur effect.
+jknkjnf
